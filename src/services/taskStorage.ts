@@ -1,17 +1,10 @@
-import {
-  Task,
-  Project,
-  CreateTaskInput,
-  CreateProjectInput,
-  DEFAULT_PROJECT,
-  ProjectColor,
-} from "../types";
+import { Task, CreateTaskInput } from "../types";
 import { LocalStorageService } from "./localStorage";
+import { ProjectStorageService } from "./projectStorage";
 
 // Storage keys
 const STORAGE_KEYS = {
   TASKS: "todoapp_tasks",
-  PROJECTS: "todoapp_projects",
   SETTINGS: "todoapp_settings",
 } as const;
 
@@ -24,7 +17,7 @@ interface AppSettings {
 
 export class TaskStorageService {
   /**
-   * Generate unique ID for tasks and projects
+   * Generate unique ID for tasks
    */
   private static generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -47,6 +40,22 @@ export class TaskStorageService {
   }
 
   /**
+   * Get a task by ID
+   */
+  static getTaskById(taskId: string): Task | null {
+    const tasks = this.getTasks();
+    return tasks.find((task) => task.id === taskId) || null;
+  }
+
+  /**
+   * Get tasks by project ID
+   */
+  static getTasksByProject(projectId: string): Task[] {
+    const tasks = this.getTasks();
+    return tasks.filter((task) => task.projectId === projectId);
+  }
+
+  /**
    * Save all tasks to localStorage
    */
   static saveTasks(tasks: Task[]): boolean {
@@ -58,6 +67,20 @@ export class TaskStorageService {
    */
   static addTask(input: CreateTaskInput): Task {
     const now = new Date();
+
+    // Use default project if none specified
+    let projectId = input.projectId;
+    if (!projectId) {
+      const defaultProject = ProjectStorageService.getDefaultProject();
+      projectId = defaultProject?.id;
+    }
+
+    // Validate project exists
+    if (projectId && !ProjectStorageService.projectExists(projectId)) {
+      const defaultProject = ProjectStorageService.getDefaultProject();
+      projectId = defaultProject?.id;
+    }
+
     const newTask: Task = {
       id: this.generateId(),
       title: input.title,
@@ -65,7 +88,7 @@ export class TaskStorageService {
       completed: false,
       status: "todo" as const,
       priority: input.priority || "medium",
-      projectId: input.projectId,
+      projectId: projectId,
       dueDate: input.dueDate,
       createdAt: now,
       updatedAt: now,
@@ -89,6 +112,15 @@ export class TaskStorageService {
     const taskIndex = tasks.findIndex((task) => task.id === taskId);
 
     if (taskIndex === -1) return null;
+
+    // Validate project exists if being updated
+    if (
+      updates.projectId &&
+      !ProjectStorageService.projectExists(updates.projectId)
+    ) {
+      const defaultProject = ProjectStorageService.getDefaultProject();
+      updates.projectId = defaultProject?.id;
+    }
 
     const updatedTask = {
       ...tasks[taskIndex],
@@ -141,124 +173,91 @@ export class TaskStorageService {
     return deletedCount;
   }
 
-  // ===== PROJECT OPERATIONS =====
-
   /**
-   * Get all projects from localStorage
+   * Move tasks from one project to another
    */
-  static getProjects(): Project[] {
-    const projects = LocalStorageService.get<Project[]>(
-      STORAGE_KEYS.PROJECTS,
-      []
-    );
-
-    // If no projects exist, create the default project
-    if (projects.length === 0) {
-      const defaultProject = this.createDefaultProject();
-      return [defaultProject];
+  static moveTasksToProject(
+    taskIds: string[],
+    targetProjectId: string
+  ): boolean {
+    if (!ProjectStorageService.projectExists(targetProjectId)) {
+      return false;
     }
 
-    // Convert date strings back to Date objects
-    return projects.map((project) => ({
-      ...project,
-      createdAt: new Date(project.createdAt),
-      updatedAt: new Date(project.updatedAt),
-    }));
+    const tasks = this.getTasks();
+    let updated = false;
+
+    tasks.forEach((task) => {
+      if (taskIds.includes(task.id)) {
+        task.projectId = targetProjectId;
+        task.updatedAt = new Date();
+        updated = true;
+      }
+    });
+
+    return updated ? this.saveTasks(tasks) : false;
   }
 
   /**
-   * Save all projects to localStorage
+   * Move all tasks from deleted project to default project
    */
-  static saveProjects(projects: Project[]): boolean {
-    return LocalStorageService.set(STORAGE_KEYS.PROJECTS, projects);
-  }
+  static handleProjectDeletion(deletedProjectId: string): boolean {
+    const defaultProject = ProjectStorageService.getDefaultProject();
+    if (!defaultProject) return false;
 
-  /**
-   * Create the default project
-   */
-  private static createDefaultProject(): Project {
-    const now = new Date();
-    const defaultProject: Project = {
-      ...DEFAULT_PROJECT,
-      id: this.generateId(),
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.saveProjects([defaultProject]);
-    return defaultProject;
-  }
-
-  /**
-   * Add a new project
-   */
-  static addProject(input: CreateProjectInput): Project {
-    const now = new Date();
-    const newProject: Project = {
-      id: this.generateId(),
-      name: input.name,
-      description: input.description,
-      color: input.color || ProjectColor.BLUE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const projects = this.getProjects();
-    projects.push(newProject);
-    this.saveProjects(projects);
-    return newProject;
-  }
-
-  /**
-   * Update an existing project
-   */
-  static updateProject(
-    projectId: string,
-    updates: Partial<Omit<Project, "id" | "createdAt">>
-  ): Project | null {
-    const projects = this.getProjects();
-    const projectIndex = projects.findIndex(
-      (project) => project.id === projectId
+    const tasks = this.getTasks();
+    const tasksToMove = tasks.filter(
+      (task) => task.projectId === deletedProjectId
     );
 
-    if (projectIndex === -1) return null;
+    if (tasksToMove.length === 0) return true;
 
-    const updatedProject = {
-      ...projects[projectIndex],
-      ...updates,
-      updatedAt: new Date(),
-    };
+    tasksToMove.forEach((task) => {
+      task.projectId = defaultProject.id;
+      task.updatedAt = new Date();
+    });
 
-    projects[projectIndex] = updatedProject;
-    this.saveProjects(projects);
-    return updatedProject;
+    return this.saveTasks(tasks);
   }
 
   /**
-   * Delete a project (and move its tasks to default project)
+   * Get task statistics
    */
-  static deleteProject(projectId: string): boolean {
-    const projects = this.getProjects();
-    const project = projects.find((p) => p.id === projectId);
+  static getTaskStats() {
+    const tasks = this.getTasks();
+    const now = new Date();
 
-    // Don't delete default projects
-    if (!project || project.isDefault) return false;
+    return {
+      total: tasks.length,
+      completed: tasks.filter((task) => task.completed).length,
+      pending: tasks.filter((task) => !task.completed).length,
+      overdue: tasks.filter(
+        (task) => task.dueDate && task.dueDate < now && !task.completed
+      ).length,
+      highPriority: tasks.filter(
+        (task) => task.priority === "high" && !task.completed
+      ).length,
+    };
+  }
 
-    // Move tasks to default project
-    const defaultProject = projects.find((p) => p.isDefault);
-    if (defaultProject) {
-      const tasks = this.getTasks();
-      const tasksToMove = tasks.filter((task) => task.projectId === projectId);
-      tasksToMove.forEach((task) => {
-        this.updateTask(task.id, { projectId: defaultProject.id });
-      });
-    }
+  /**
+   * Get task statistics by project
+   */
+  static getTaskStatsByProject(projectId: string) {
+    const tasks = this.getTasksByProject(projectId);
+    const now = new Date();
 
-    // Remove the project
-    const filteredProjects = projects.filter(
-      (project) => project.id !== projectId
-    );
-    return this.saveProjects(filteredProjects);
+    return {
+      total: tasks.length,
+      completed: tasks.filter((task) => task.completed).length,
+      pending: tasks.filter((task) => !task.completed).length,
+      overdue: tasks.filter(
+        (task) => task.dueDate && task.dueDate < now && !task.completed
+      ).length,
+      highPriority: tasks.filter(
+        (task) => task.priority === "high" && !task.completed
+      ).length,
+    };
   }
 
   // ===== SETTINGS OPERATIONS =====
@@ -267,7 +266,7 @@ export class TaskStorageService {
    * Get app settings
    */
   static getSettings(): AppSettings {
-    const defaultProject = this.getProjects().find((p) => p.isDefault);
+    const defaultProject = ProjectStorageService.getDefaultProject();
     return LocalStorageService.get<AppSettings>(STORAGE_KEYS.SETTINGS, {
       theme: "system",
       defaultProjectId: defaultProject?.id || "",
@@ -287,12 +286,23 @@ export class TaskStorageService {
   // ===== UTILITY OPERATIONS =====
 
   /**
-   * Clear all app data
+   * Clear all task data
+   */
+  static clearAllTasks(): boolean {
+    try {
+      LocalStorageService.remove(STORAGE_KEYS.TASKS);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Clear all app data (tasks and settings)
    */
   static clearAllData(): boolean {
     try {
       LocalStorageService.remove(STORAGE_KEYS.TASKS);
-      LocalStorageService.remove(STORAGE_KEYS.PROJECTS);
       LocalStorageService.remove(STORAGE_KEYS.SETTINGS);
       return true;
     } catch {
@@ -301,26 +311,25 @@ export class TaskStorageService {
   }
 
   /**
-   * Export all data for backup
+   * Export task data for backup
    */
-  static exportData() {
+  static exportTasks() {
     return {
       tasks: this.getTasks(),
-      projects: this.getProjects(),
       settings: this.getSettings(),
       exportedAt: new Date().toISOString(),
     };
   }
 
   /**
-   * Import data from backup
+   * Import task data from backup
    */
-  static importData(
-    data: ReturnType<typeof TaskStorageService.exportData>
-  ): boolean {
+  static importTasks(data: {
+    tasks?: Task[];
+    settings?: AppSettings;
+  }): boolean {
     try {
       if (data.tasks) this.saveTasks(data.tasks);
-      if (data.projects) this.saveProjects(data.projects);
       if (data.settings) this.saveSettings(data.settings);
       return true;
     } catch {
