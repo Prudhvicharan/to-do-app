@@ -37,7 +37,6 @@ export interface DropdownProps {
   isFullWidth?: boolean;
   isSearchable?: boolean;
   isClearable?: boolean;
-  isMultiple?: boolean;
   maxHeight?: number;
   className?: string;
   triggerClassName?: string;
@@ -47,135 +46,6 @@ export interface DropdownProps {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
-
-// Multi-select dropdown props
-export interface MultiSelectDropdownProps
-  extends Omit<
-    DropdownProps,
-    "value" | "defaultValue" | "onSelect" | "isMultiple"
-  > {
-  value?: string[];
-  defaultValue?: string[];
-  onSelect: (values: string[], options: DropdownOption[]) => void;
-  maxSelectedDisplay?: number;
-}
-
-// Dropdown trigger component
-const DropdownTrigger: React.FC<{
-  isOpen: boolean;
-  selectedOption: DropdownOption | null;
-  selectedOptions?: DropdownOption[];
-  placeholder?: string;
-  size: DropdownSize;
-  variant: DropdownVariant;
-  isDisabled?: boolean;
-  isFullWidth?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-  className?: string;
-  maxSelectedDisplay?: number;
-  onClick: () => void;
-}> = ({
-  isOpen,
-  selectedOption,
-  selectedOptions,
-  placeholder,
-  size,
-  variant,
-  isDisabled,
-  isFullWidth,
-  leftIcon,
-  rightIcon,
-  className,
-  maxSelectedDisplay = 2,
-  onClick,
-}) => {
-  const triggerClasses = [
-    styles.trigger,
-    styles[`trigger--${variant}`],
-    styles[`trigger--${size}`],
-    isOpen && styles["trigger--open"],
-    isDisabled && styles["trigger--disabled"],
-    isFullWidth && styles["trigger--fullWidth"],
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const renderSelectedContent = () => {
-    if (selectedOptions) {
-      // Multi-select mode
-      if (selectedOptions.length === 0) {
-        return <span className={styles.placeholder}>{placeholder}</span>;
-      }
-
-      if (selectedOptions.length <= maxSelectedDisplay) {
-        return (
-          <div className={styles.selectedTags}>
-            {selectedOptions.map((option) => (
-              <span key={option.value} className={styles.selectedTag}>
-                {option.label}
-              </span>
-            ))}
-          </div>
-        );
-      }
-
-      return (
-        <span className={styles.selectedText}>
-          {selectedOptions.length} items selected
-        </span>
-      );
-    }
-
-    // Single select mode
-    if (selectedOption) {
-      return (
-        <div className={styles.selectedContent}>
-          {selectedOption.icon && (
-            <span className={styles.selectedIcon}>{selectedOption.icon}</span>
-          )}
-          <span className={styles.selectedText}>{selectedOption.label}</span>
-        </div>
-      );
-    }
-
-    return <span className={styles.placeholder}>{placeholder}</span>;
-  };
-
-  return (
-    <button
-      type="button"
-      className={triggerClasses}
-      onClick={onClick}
-      disabled={isDisabled}
-      aria-expanded={isOpen}
-      aria-haspopup="listbox"
-    >
-      {leftIcon && <span className={styles.leftIcon}>{leftIcon}</span>}
-
-      <div className={styles.triggerContent}>{renderSelectedContent()}</div>
-
-      {rightIcon ? (
-        <span className={styles.rightIcon}>{rightIcon}</span>
-      ) : (
-        <svg
-          className={`${styles.chevron} ${isOpen ? styles["chevron--up"] : ""}`}
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="6,9 12,15 18,9" />
-        </svg>
-      )}
-    </button>
-  );
-};
 
 // Single select dropdown
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -338,6 +208,19 @@ export const Dropdown: React.FC<DropdownProps> = ({
     .filter(Boolean)
     .join(" ");
 
+  // Trigger classes
+  const triggerClasses = [
+    styles.trigger,
+    styles[`trigger--${variant}`],
+    styles[`trigger--${size}`],
+    isOpen && styles["trigger--open"],
+    isDisabled && styles["trigger--disabled"],
+    isFullWidth && styles["trigger--fullWidth"],
+    triggerClassName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   // Menu classes
   const menuClasses = [styles.menu, styles[`menu--${position}`], menuClassName]
     .filter(Boolean)
@@ -350,19 +233,53 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
       {/* Trigger */}
       <div className={styles.triggerWrapper} onKeyDown={handleKeyDown}>
-        <DropdownTrigger
-          isOpen={isOpen}
-          selectedOption={selectedOption}
-          placeholder={placeholder}
-          size={size}
-          variant={variant}
-          isDisabled={isDisabled}
-          isFullWidth={isFullWidth}
-          leftIcon={leftIcon}
-          rightIcon={rightIcon}
-          className={triggerClassName}
+        <button
+          type="button"
+          className={triggerClasses}
           onClick={() => !isDisabled && setIsOpen(!isOpen)}
-        />
+          disabled={isDisabled}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+        >
+          {leftIcon && <span className={styles.leftIcon}>{leftIcon}</span>}
+
+          <div className={styles.triggerContent}>
+            {selectedOption ? (
+              <div className={styles.selectedContent}>
+                {selectedOption.icon && (
+                  <span className={styles.selectedIcon}>
+                    {selectedOption.icon}
+                  </span>
+                )}
+                <span className={styles.selectedText}>
+                  {selectedOption.label}
+                </span>
+              </div>
+            ) : (
+              <span className={styles.placeholder}>{placeholder}</span>
+            )}
+          </div>
+
+          {rightIcon ? (
+            <span className={styles.rightIcon}>{rightIcon}</span>
+          ) : (
+            <svg
+              className={`${styles.chevron} ${
+                isOpen ? styles["chevron--up"] : ""
+              }`}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="6,9 12,15 18,9" />
+            </svg>
+          )}
+        </button>
 
         {/* Clear button */}
         {isClearable && selectedValue && !isDisabled && (
@@ -473,7 +390,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
   );
 };
 
-// Multi-select dropdown
+// Multi-select dropdown (simplified version)
+export interface MultiSelectDropdownProps
+  extends Omit<DropdownProps, "value" | "defaultValue" | "onSelect"> {
+  value?: string[];
+  defaultValue?: string[];
+  onSelect: (values: string[], options: DropdownOption[]) => void;
+  maxSelectedDisplay?: number;
+}
+
 export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   options,
   value = [],
@@ -509,25 +434,20 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     onSelect(newValues, newOptions);
   };
 
+  // Create a single-select dropdown that manages multiple selections internally
   return (
     <Dropdown
       {...props}
       options={options}
       value=""
-      placeholder={placeholder}
-      onSelect={handleSelect}
-      triggerContent={
-        <DropdownTrigger
-          isOpen={false}
-          selectedOption={null}
-          selectedOptions={selectedOptions}
-          placeholder={placeholder}
-          size={props.size || "md"}
-          variant={props.variant || "default"}
-          maxSelectedDisplay={maxSelectedDisplay}
-          onClick={() => {}}
-        />
+      placeholder={
+        selectedOptions.length === 0
+          ? placeholder
+          : selectedOptions.length <= maxSelectedDisplay
+          ? selectedOptions.map((o) => o.label).join(", ")
+          : `${selectedOptions.length} items selected`
       }
+      onSelect={handleSelect}
     />
   );
 };

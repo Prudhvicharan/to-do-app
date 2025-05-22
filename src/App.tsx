@@ -243,7 +243,7 @@ export default function App() {
         <h2>Cards</h2>
 
         {/* Basic Card */}
-        <Card
+        {/* <Card
           variant="outlined"
           style={{ marginBottom: "1rem", maxWidth: "400px" }}
         >
@@ -259,7 +259,7 @@ export default function App() {
             </Button>
             <Button size="sm">Save</Button>
           </Card.Footer>
-        </Card>
+        </Card> */}
 
         {/* Task Cards */}
         <div style={{ display: "grid", gap: "1rem", maxWidth: "600px" }}>
@@ -280,7 +280,7 @@ export default function App() {
         <h2>Modal</h2>
         <Button onClick={() => setIsModalOpen(true)}>Open Modal</Button>
 
-        <Modal
+        {/* <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           title="Add New Task"
@@ -308,7 +308,7 @@ export default function App() {
             </Button>
             <Button onClick={() => setIsModalOpen(false)}>Create Task</Button>
           </Modal.Footer>
-        </Modal>
+        </Modal> */}
       </section>
 
       {/* Theme Toggle */}
