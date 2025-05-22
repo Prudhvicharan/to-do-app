@@ -1,0 +1,264 @@
+/* src/components/layout/MainLayout/MainLayout.module.css */
+
+.layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--color-gray-50);
+    transition: margin-left var(--transition-normal);
+  }
+  
+  /* Header */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    flex-shrink: 0;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    /* Sidebar positioning handled by Sidebar component */
+  }
+  
+  /* Main content area */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow flexbox to shrink */
+    padding-top: 0;
+    transition: margin-left var(--transition-normal);
+  }
+  
+  .content {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+    overflow: hidden;
+  }
+  
+  /* Layout adjustments when sidebar is open on desktop */
+  .layout--sidebarOpen .main {
+    margin-left: 280px;
+  }
+  
+  .layout--sidebarOpen .header {
+    margin-left: 280px;
+  }
+  
+  /* Skip link for accessibility */
+  .skipLink {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    z-index: 100;
+    padding: 8px;
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    text-decoration: none;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: all var(--transition-fast);
+  
+    &:focus {
+      top: 6px;
+      opacity: 1;
+    }
+  }
+  
+  /* Dark theme */
+  [data-theme="dark"] {
+    .layout {
+      background-color: var(--color-gray-900);
+    }
+  
+    .skipLink {
+      background-color: var(--color-primary);
+      color: var(--color-white);
+    }
+  }
+  
+  /* Desktop styles */
+  @media (min-width: 1024px) {
+    .layout {
+      flex-direction: row;
+    }
+  
+    .main {
+      flex: 1;
+      padding-top: 4rem; /* Account for fixed header */
+    }
+  
+    .content {
+      padding: var(--spacing-xl);
+      max-width: 1400px;
+    }
+  
+    /* Remove transitions on desktop for better performance */
+    .layout--sidebarOpen .main,
+    .layout--sidebarOpen .header {
+      transition: none;
+    }
+  }
+  
+  /* Tablet styles */
+  @media (max-width: 1023px) and (min-width: 768px) {
+    .content {
+      padding: var(--spacing-lg) var(--spacing-xl);
+    }
+  }
+  
+  /* Mobile styles */
+  @media (max-width: 767px) {
+    .layout {
+      min-height: 100vh;
+      min-height: 100dvh; /* Dynamic viewport height for mobile */
+    }
+  
+    .main {
+      padding-top: 4rem; /* Account for fixed header */
+    }
+  
+    .content {
+      padding: var(--spacing-md);
+    }
+  
+    /* No sidebar margin adjustments on mobile */
+    .layout--sidebarOpen .main,
+    .layout--sidebarOpen .header {
+      margin-left: 0;
+    }
+  }
+  
+  /* Small mobile devices */
+  @media (max-width: 480px) {
+    .content {
+      padding: var(--spacing-sm);
+    }
+  }
+  
+  /* Content area variations for different page types */
+  .content--centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .content--fullWidth {
+    max-width: none;
+    padding: 0;
+  }
+  
+  .content--narrow {
+    max-width: 800px;
+  }
+  
+  .content--wide {
+    max-width: 1600px;
+  }
+  
+  /* Scrollable content */
+  .content--scrollable {
+    height: calc(100vh - 4rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  @media (min-width: 1024px) {
+    .content--scrollable {
+      height: calc(100vh - 4rem);
+    }
+  }
+  
+  /* Loading state */
+  .layout--loading {
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  
+  .layout--loading .content {
+    position: relative;
+  }
+  
+  .layout--loading .content::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2rem;
+    height: 2rem;
+    margin: -1rem 0 0 -1rem;
+    border: 2px solid var(--color-gray-300);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Focus management */
+  .layout:focus-within .main {
+    outline: none;
+  }
+  
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .layout {
+      border: 2px solid var(--color-gray-900);
+    }
+    
+    .skipLink {
+      border: 2px solid var(--color-white);
+    }
+  }
+  
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .layout,
+    .main,
+    .header,
+    .skipLink {
+      transition: none;
+    }
+  
+    .layout--loading .content::after {
+      animation: none;
+    }
+  }
+  
+  /* Print styles */
+  @media print {
+    .sidebar,
+    .header {
+      display: none !important;
+    }
+  
+    .layout--sidebarOpen .main,
+    .layout--sidebarOpen .header {
+      margin-left: 0 !important;
+    }
+  
+    .main {
+      padding: 0;
+      margin: 0;
+    }
+  
+    .content {
+      padding: 0;
+      max-width: none;
+    }
+  
+    .skipLink {
+      display: none;
+    }
+  }

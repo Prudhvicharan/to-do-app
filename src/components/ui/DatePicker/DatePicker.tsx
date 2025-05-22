@@ -54,7 +54,7 @@ export interface DatePickerProps {
 }
 
 // Helper function to parse date
-const parseDate = (date: Date | string | null): Date | null => {
+const parseDate = (date: Date | string | null | undefined): Date | null => {
   if (!date) return null;
   if (date instanceof Date) return isValid(date) ? date : null;
   if (typeof date === "string") {

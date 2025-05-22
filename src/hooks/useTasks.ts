@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Task,
-  CreateTaskInput,
-  UpdateTaskInput,
-  TaskFilter,
-  TaskSort,
-  TaskStats,
+  type Task,
+  type CreateTaskInput,
+  type UpdateTaskInput,
+  type TaskFilter,
+  type TaskSort,
+  type TaskStats,
   SortBy,
   SortDirection,
   DueDateFilter,

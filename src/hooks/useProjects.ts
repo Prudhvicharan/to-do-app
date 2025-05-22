@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Project,
-  CreateProjectInput,
-  UpdateProjectInput,
-  ProjectWithStats,
+  type Project,
+  type CreateProjectInput,
+  type UpdateProjectInput,
+  type ProjectWithStats,
   ProjectColor,
 } from "../types";
 import { ProjectStorageService, TaskStorageService } from "../services";

@@ -1,9 +1,5 @@
-import {
-  Project,
-  CreateProjectInput,
-  DEFAULT_PROJECT,
-  ProjectColor,
-} from "../types";
+import type { Project, CreateProjectInput } from "../types";
+import { DEFAULT_PROJECT, ProjectColor } from "../types";
 import { LocalStorageService } from "./localStorage";
 
 // Storage keys

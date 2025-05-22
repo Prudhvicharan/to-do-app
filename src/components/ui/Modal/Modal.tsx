@@ -85,7 +85,11 @@ export const ModalFooter: React.FC<ModalFooterProps> = ({
 }) => <div className={`${styles.footer} ${className}`}>{children}</div>;
 
 // Main Modal component
-export const Modal: React.FC<ModalProps> = ({
+export const Modal: React.FC<ModalProps> & {
+  Header: React.FC<ModalHeaderProps>;
+  Body: React.FC<ModalBodyProps>;
+  Footer: React.FC<ModalFooterProps>;
+} = ({
   isOpen,
   onClose,
   title,

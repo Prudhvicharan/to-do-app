@@ -1,4 +1,4 @@
-import { Task, CreateTaskInput } from "../types";
+import type { Task, CreateTaskInput, TaskStatus, TaskPriority } from "../types";
 import { LocalStorageService } from "./localStorage";
 import { ProjectStorageService } from "./projectStorage";
 
@@ -86,8 +86,8 @@ export class TaskStorageService {
       title: input.title,
       description: input.description,
       completed: false,
-      status: "todo" as const,
-      priority: input.priority || "medium",
+      status: "todo" as TaskStatus,
+      priority: input.priority || ("medium" as TaskPriority),
       projectId: projectId,
       dueDate: input.dueDate,
       createdAt: now,
@@ -157,7 +157,7 @@ export class TaskStorageService {
     const completed = !task.completed;
     return this.updateTask(taskId, {
       completed,
-      status: completed ? "completed" : "todo",
+      status: (completed ? "completed" : "todo") as TaskStatus,
     });
   }
 
